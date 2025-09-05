@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>توقع نتائج المباريات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .prediction-result {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .prediction-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .home-win { color: #28a745; }
+        .away-win { color: #dc3545; }
+        .draw { color: #ffc107; }
+
+        .probabilities {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .prob-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .prob-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .prob-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .team-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .team-stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .team-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ توقع نتائج المباريات</h1>
+            <p>استخدم الذكاء الاصطناعي لتوقع نتائج المباريات الدولية</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label for="homeTeam">الفريق المضيف:</label>
+                    <select id="homeTeam" required>
+                        <option value="">اختر الفريق المضيف</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="awayTeam">الفريق الضيف:</label>
+                    <select id="awayTeam" required>
+                        <option value="">اختر الفريق الضيف</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="predict-btn" id="predictBtn">
+                    🔮 توقع النتيجة
+                </button>
+            </form>
+            
+            <div id="resultContainer" class="result-container">
+                <div id="loadingDiv" class="loading">
+                    جاري التحليل... ⚽
+                </div>
+                
+                <div id="predictionResult" style="display: none;">
+                    <div class="prediction-result">
+                        <div class="prediction-text" id="predictionText"></div>
+                    </div>
+                    
+                    <div class="probabilities" id="probabilities"></div>
+                    
+                    <div class="team-stats" id="teamStats"></div>
+                </div>
+                
+                <div id="errorDiv" class="error" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let teams = [];
+
+        // Load teams when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTeams();
+        });
+
+        async function loadTeams() {
+            try {
+                const response = await fetch('/api/teams');
+                const data = await response.json();
+                teams = data.teams;
+                
+                const homeSelect = document.getElementById('homeTeam');
+                const awaySelect = document.getElementById('awayTeam');
+                
+                teams.forEach(team => {
+                    const option1 = new Option(team, team);
+                    const option2 = new Option(team, team);
+                    homeSelect.add(option1);
+                    awaySelect.add(option2);
+                });
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                showError('خطأ في تحميل قائمة الفرق');
+            }
+        }
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const homeTeam = document.getElementById('homeTeam').value;
+            const awayTeam = document.getElementById('awayTeam').value;
+            
+            if (!homeTeam || !awayTeam) {
+                showError('يرجى اختيار كلا الفريقين');
+                return;
+            }
+            
+            if (homeTeam === awayTeam) {
+                showError('لا يمكن أن يكون الفريق المضيف والضيف نفس الفريق');
+                return;
+            }
+            
+            await makePrediction(homeTeam, awayTeam);
+        });
+
+        async function makePrediction(homeTeam, awayTeam) {
+            const resultContainer = document.getElementById('resultContainer');
+            const loadingDiv = document.getElementById('loadingDiv');
+            const predictionResult = document.getElementById('predictionResult');
+            const errorDiv = document.getElementById('errorDiv');
+            const predictBtn = document.getElementById('predictBtn');
+            
+            // Show loading
+            resultContainer.style.display = 'block';
+            loadingDiv.style.display = 'block';
+            predictionResult.style.display = 'none';
+            errorDiv.style.display = 'none';
+            predictBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        home_team: homeTeam,
+                        away_team: awayTeam
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayPrediction(data, homeTeam, awayTeam);
+                } else {
+                    showError(data.error || 'حدث خطأ في التوقع');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('خطأ في الاتصال بالخادم');
+            } finally {
+                loadingDiv.style.display = 'none';
+                predictBtn.disabled = false;
+            }
+        }
+
+        function displayPrediction(data, homeTeam, awayTeam) {
+            const predictionResult = document.getElementById('predictionResult');
+            const predictionText = document.getElementById('predictionText');
+            const probabilities = document.getElementById('probabilities');
+            const teamStats = document.getElementById('teamStats');
+            
+            // Display prediction
+            let predictionClass = '';
+            let predictionEmoji = '';
+            
+            if (data.prediction === 'Home Win') {
+                predictionClass = 'home-win';
+                predictionEmoji = '🏠';
+            } else if (data.prediction === 'Away Win') {
+                predictionClass = 'away-win';
+                predictionEmoji = '✈️';
+            } else {
+                predictionClass = 'draw';
+                predictionEmoji = '🤝';
+            }
+            
+            const predictionMap = {
+                'Home Win': `فوز ${homeTeam}`,
+                'Away Win': `فوز ${awayTeam}`,
+                'Draw': 'تعادل'
+            };
+            
+            predictionText.innerHTML = `${predictionEmoji} ${predictionMap[data.prediction]}`;
+            predictionText.className = `prediction-text ${predictionClass}`;
+            
+            // Display probabilities
+            probabilities.innerHTML = '';
+            Object.entries(data.probabilities).forEach(([outcome, prob]) => {
+                const probCard = document.createElement('div');
+                probCard.className = 'prob-card';
+                probCard.innerHTML = `
+                    <div class="prob-label">${predictionMap[outcome]}</div>
+                    <div class="prob-value">${(prob * 100).toFixed(1)}%</div>
+                `;
+                probabilities.appendChild(probCard);
+            });
+            
+            // Display team stats
+            teamStats.innerHTML = `
+                <div class="team-stat-card">
+                    <div class="team-name">${homeTeam}</div>
+                    <div class="stat-item">
+                        <span>معدل الفوز:</span>
+                        <span>${(data.home_team_stats.win_rate * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>متوسط الأهداف المسجلة:</span>
+                        <span>${data.home_team_stats.avg_scored.toFixed(1)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>متوسط الأهداف المستقبلة:</span>
+                        <span>${data.home_team_stats.avg_conceded.toFixed(1)}</span>
+                    </div>
+                </div>
+                <div class="team-stat-card">
+                    <div class="team-name">${awayTeam}</div>
+                    <div class="stat-item">
+                        <span>معدل الفوز:</span>
+                        <span>${(data.away_team_stats.win_rate * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>متوسط الأهداف المسجلة:</span>
+                        <span>${data.away_team_stats.avg_scored.toFixed(1)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>متوسط الأهداف المستقبلة:</span>
+                        <span>${data.away_team_stats.avg_conceded.toFixed(1)}</span>
+                    </div>
+                </div>
+            `;
+            
+            predictionResult.style.display = 'block';
+        }
+
+        function showError(message) {
+            const resultContainer = document.getElementById('resultContainer');
+            const errorDiv = document.getElementById('errorDiv');
+            const predictionResult = document.getElementById('predictionResult');
+            const loadingDiv = document.getElementById('loadingDiv');
+            
+            resultContainer.style.display = 'block';
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = message;
+            predictionResult.style.display = 'none';
+            loadingDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
